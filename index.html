@@ -454,10 +454,47 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
       auto = setInterval(function(){ if (!document.hidden) launch(rnd(W * .1, W * .9), rnd(H * .1, H * .45)); }, 1700);
     }
     lightInitial();
+    autoScrollDown();
     setTimeout(function(){ gate.classList.add('done'); gate.style.display = 'none'; }, 3000);
   }
   gate.addEventListener('click', openGate);
   seal.focus({preventScroll: true});
+
+  /* after the gate opens, glide down on its own so the greeting and the button come into view.
+     Any scroll gesture or key press by the visitor stops it at once. */
+  var userScrolled = false;
+  ['wheel', 'touchmove', 'keydown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ userScrolled = true; }, {passive: true});
+  });
+  function glideTo(target, ms){
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    target = Math.max(0, Math.min(target, max));
+    var from = window.pageYOffset, dist = target - from;
+    if (userScrolled || Math.abs(dist) < 8) return;
+    if (reduce){ window.scrollTo(0, target); return; }
+    var t0 = performance.now();
+    (function step(now){
+      if (userScrolled) return;
+      var k = Math.min(1, (now - t0) / ms);
+      var e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      window.scrollTo(0, from + dist * e);
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+  function autoScrollDown(){
+    userScrolled = false;
+    /* 1. rangoli has drawn and the heading is in: bring the greeting up to the top */
+    setTimeout(function(){
+      var top = $('.eyebrow').getBoundingClientRect().top + window.pageYOffset;
+      glideTo(top - 28, 1800);
+    }, 2300);
+    /* 2. everything has faded in: make sure the diya button and its hint are on screen */
+    setTimeout(function(){
+      var r = $('#progress').getBoundingClientRect();
+      var need = r.bottom + window.pageYOffset - window.innerHeight + 32;
+      if (need > window.pageYOffset) glideTo(need, 1200);
+    }, 5400);
+  }
 
   /* tap anywhere */
   document.addEventListener('pointerdown', function(e){
