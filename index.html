@@ -6,8 +6,8 @@
 <title>Shubh Deepavali</title>
 <meta name="description" content="A little light, just for you this Deepavali.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Shubh Deepavali 🪔">
-<meta property="og:description" content="A little light, just for you. Tap to open your Diwali surprise.">
+<meta property="og:title" content="शुभ दीपावली · Happy Diwali 🪔">
+<meta property="og:description" content="आपके लिए एक छोटा सा उपहार। A little light, just for you. Tap to open.">
 <meta property="og:image" content="https://rishav414-blip.github.io/diwali_1/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -524,7 +524,9 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
     if (!raw){ note.textContent = 'Type your name to get your own link.'; setReady(false); return; }
     if (!slug){ note.textContent = 'Please use letters A to Z or digits in your name.'; setReady(false); return; }
     myLink = window.location.origin + window.location.pathname + '?from=' + slug;
-    var text = '\uD83E\uDE94 Shubh Deepavali! \uD83E\uDE94\nA little light for you, from ' + titleCase(slug) + '. Tap to open your surprise:\n' + myLink;
+    var nm = titleCase(slug);
+    var text = '\uD83E\uDE94 \u0936\u0941\u092D \u0926\u0940\u092A\u093E\u0935\u0932\u0940! Happy Diwali! \uD83E\uDE94\n' +
+      nm + ' \u0915\u0940 \u0924\u0930\u092B\u093C \u0938\u0947 \u0906\u092A\u0915\u0947 \u0932\u093F\u090F \u090F\u0915 \u091B\u094B\u091F\u093E \u0938\u093E \u0909\u092A\u0939\u093E\u0930. A little light for you, from ' + nm + ' \uD83D\uDC47\n' + myLink;
     wa.setAttribute('href', 'https://wa.me/?text=' + encodeURIComponent(text));
     note.textContent = 'Your greeting will be signed: ' + titleCase(slug);
     setReady(true);
