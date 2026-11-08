@@ -42,9 +42,9 @@ body{
     linear-gradient(180deg,#160522,#1d0629 60%,#2a0a1c);
   background-color:var(--night);
 }
-#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#stars{position:fixed;top:0;right:0;bottom:0;left:0;z-index:0;pointer-events:none}
 #stars i{position:absolute;border-radius:50%;background:#fff3c9;animation:twinkle 3.4s ease-in-out infinite}
-canvas{position:fixed;inset:0;z-index:1;pointer-events:none}
+canvas{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1;pointer-events:none}
 
 /* garland */
 .toran{position:absolute;top:0;left:0;width:100%;height:150px;z-index:6;pointer-events:none;transform:translateY(-115%)}
@@ -54,19 +54,19 @@ body.open .toran{transform:none;transition:transform 1.5s cubic-bezier(.2,.9,.3,
 
 /* card */
 #card{position:relative;z-index:5;max-width:600px;margin:0 auto;padding:118px 20px 8px;text-align:center}
-.rangoli{width:min(74vw,300px);aspect-ratio:1;margin:0 auto 6px;filter:drop-shadow(0 0 18px rgba(255,150,40,.35))}
+.rangoli{width:min(74vw,300px);height:min(74vw,300px);margin:0 auto 6px;filter:drop-shadow(0 0 18px rgba(255,150,40,.35))}
 .rangoli svg{width:100%;height:100%;display:block;overflow:visible}
 .draw{stroke-dasharray:1;stroke-dashoffset:0;fill-opacity:.3}
-body.open .draw{animation:draw 1.9s ease both;animation-delay:var(--d,0s)}
+body.open .draw{animation:draw 1.9s ease both;animation-delay:calc(var(--d,0s) + 1.2s)}
 .dot{transform-box:fill-box;transform-origin:center}
-body.open .dot{animation:pop .5s cubic-bezier(.3,1.6,.5,1) both;animation-delay:var(--d,0s)}
+body.open .dot{animation:pop .5s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--d,0s) + 1.2s)}
 .core{transform-box:fill-box;transform-origin:center;animation:pulse 2.6s ease-in-out infinite}
 
 .eyebrow{margin:0 0 6px;font-family:var(--display);font-style:italic;font-size:1.15rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
-h1.hi{margin:0;font-family:var(--deva);font-weight:400;font-size:clamp(2.7rem,12vw,4.4rem);line-height:1.2;
+h1.hi{margin:0;font-family:var(--deva);font-weight:400;font-size:3.2rem;font-size:clamp(2.7rem,12vw,4.4rem);line-height:1.2;
   background:linear-gradient(100deg,#ffb12e 0%,#fff2b8 30%,#ffd24a 50%,#ff8a1c 75%,#ffd24a 100%);background-size:220% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:shimmer 6s linear infinite}
-h2.en{margin:2px 0 18px;font-family:var(--display);font-style:italic;font-weight:500;font-size:clamp(1.7rem,6.5vw,2.4rem);letter-spacing:.06em;color:var(--ivory);text-wrap:balance}
+h2.en{margin:2px 0 18px;font-family:var(--display);font-style:italic;font-weight:500;font-size:2rem;font-size:clamp(1.7rem,6.5vw,2.4rem);letter-spacing:.06em;color:var(--ivory);text-wrap:balance}
 .orn{position:relative;height:14px;margin:0 auto 18px;width:min(260px,70%)}
 .orn::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 .orn::after{content:"";position:absolute;left:50%;top:50%;width:9px;height:9px;background:var(--gold);transform:translate(-50%,-50%) rotate(45deg);box-shadow:0 0 12px var(--gold)}
@@ -115,7 +115,8 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
 /* diyas */
 .diyas{position:relative;z-index:5;max-width:640px;margin:0 auto;padding:24px 14px 56px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px}
 .diyas::before{content:"";position:absolute;left:5%;right:5%;bottom:34px;height:46px;background:radial-gradient(ellipse at 50% 50%,rgba(255,150,40,.28),transparent 70%);filter:blur(8px);pointer-events:none}
-.diya{width:clamp(40px,10.5vw,64px);flex:none}
+.diya{width:44px;width:clamp(40px,10.5vw,64px);flex:none}
+.diya{scroll-margin-bottom:32px}
 .diya svg{display:block;width:100%;height:auto;overflow:visible}
 .flame,.glow{opacity:0}
 .flame{transform-box:fill-box;transform-origin:50% 100%;transform:scale(0)}
@@ -125,7 +126,7 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
 .count{position:relative;z-index:5;text-align:center;margin:-34px 0 36px;font-family:var(--display);font-style:italic;font-size:1.15rem;color:var(--gold);letter-spacing:.04em}
 
 /* gate */
-#gate{position:fixed;inset:0;z-index:100;cursor:pointer}
+#gate{position:fixed;top:0;right:0;bottom:0;left:0;z-index:100;cursor:pointer}
 #gate.done{pointer-events:none}
 .half{position:absolute;top:0;bottom:0;width:50.5%;
   background:
@@ -453,7 +454,7 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
     if (!reduce){
       auto = setInterval(function(){ if (!document.hidden) launch(rnd(W * .1, W * .9), rnd(H * .1, H * .45)); }, 1700);
     }
-    lightInitial();
+    if (!reduce) lightInitial();
     autoScrollDown();
     setTimeout(function(){ gate.classList.add('done'); gate.style.display = 'none'; }, 3000);
   }
@@ -487,13 +488,13 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
     setTimeout(function(){
       var top = $('.eyebrow').getBoundingClientRect().top + window.pageYOffset;
       glideTo(top - 28, 1800);
-    }, 2300);
+    }, 4600);
     /* 2. everything has faded in: make sure the diya button and its hint are on screen */
     setTimeout(function(){
       var r = $('#progress').getBoundingClientRect();
       var need = r.bottom + window.pageYOffset - window.innerHeight + 32;
       if (need > window.pageYOffset) glideTo(need, 1200);
-    }, 5400);
+    }, 6800);
   }
 
   /* tap anywhere */
@@ -504,12 +505,19 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
 
   /* sender name, read from a link like #from-priya-sharma */
   var signName = $('#signName');
+  var NOTNAME;
+  try { NOTNAME = new RegExp('[^\\p{L}\\p{M}\\p{N}]+', 'gu'); } catch (e) { NOTNAME = /[^a-z0-9]+/g; }
+  function cleanName(n, max){
+    return String(n).toLowerCase().replace(NOTNAME, '-').replace(/^-+|-+$/g, '').slice(0, max).replace(/-+$/, '');
+  }
   function titleCase(s){ return s.split('-').filter(Boolean).map(function(w){ return w.charAt(0).toUpperCase() + w.slice(1); }).join(' '); }
   function readFrom(){
-    var q = /[?&]from=([A-Za-z0-9-]{1,40})(?:&|$)/.exec(window.location.search || '');
-    var h = /^#from-([a-z0-9-]{1,40})$/i.exec(window.location.hash || '');
+    var q = /[?&]from=([^&#]*)/.exec(window.location.search || '');
+    var h = /^#from-(.+)$/.exec(window.location.hash || '');
     var v = q ? q[1] : (h ? h[1] : '');
-    signName.textContent = v ? titleCase(v.toLowerCase()) : 'Rishav Sharma';
+    try { v = decodeURIComponent(v); } catch (e) { v = ''; }
+    v = cleanName(v, 40);
+    signName.textContent = v ? titleCase(v) : 'Rishav Sharma';
   }
   readFrom();
 
@@ -539,6 +547,12 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
     if (lit < 27){
       var d = addDiya(true);
       d.classList.add('lit'); lit++; updateCount();
+      /* before the gift unlocks, keep the new diya on screen (wait for its pop-in so it has a size) */
+      if (!unlocked && mine + 1 < NEED){
+        setTimeout(function(){
+          try { d.scrollIntoView({block: 'nearest', behavior: reduce ? 'auto' : 'smooth'}); } catch (e) {}
+        }, 700);
+      }
     }
     launch(rnd(W * .15, W * .85), rnd(H * .1, H * .4));
     launch(rnd(W * .15, W * .85), rnd(H * .1, H * .4));
@@ -548,9 +562,7 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
 
   /* personalised link */
   var input = $('#myname'), note = $('#giftnote'), wa = $('#wa'), cp = $('#cp'), myLink = '';
-  function slugify(n){
-    return n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30).replace(/-+$/, '');
-  }
+  function slugify(n){ return cleanName(n, 30); }
   function setReady(ok){
     wa.setAttribute('aria-disabled', ok ? 'false' : 'true');
     cp.disabled = !ok;
@@ -559,12 +571,12 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
   function updateName(){
     var raw = input.value.trim(), slug = slugify(raw);
     if (!raw){ note.textContent = 'Type your name to get your own link.'; setReady(false); return; }
-    if (!slug){ note.textContent = 'Please use letters A to Z or digits in your name.'; setReady(false); return; }
-    myLink = window.location.origin + window.location.pathname + '?from=' + slug;
+    if (!slug){ note.textContent = 'Please use letters or digits in your name.'; setReady(false); return; }
+    myLink = 'https://rishav414-blip.github.io/diwali_1/?from=' + encodeURIComponent(slug);
     var nm = titleCase(slug);
-    var text = '\uD83E\uDE94 \u0936\u0941\u092D \u0926\u0940\u092A\u093E\u0935\u0932\u0940! Happy Diwali! \uD83E\uDE94\n\n' +
-      '\u0906\u092A\u0915\u094B \u0914\u0930 \u0918\u0930 \u092E\u0947\u0902 \u0938\u092C\u0915\u094B \u0922\u0947\u0930 \u0938\u093E\u0930\u093E \u092A\u094D\u092F\u093E\u0930 \u0914\u0930 \u0930\u094B\u0936\u0928\u0940 \u2728\n' +
-      'Wishing you and everyone at home a bright, happy Diwali. I made you a little something, open it when you have a minute. \u2014 ' + nm + ' \uD83D\uDC47\n\n' + myLink;
+    var text = '🪔 शुभ दीपावली! Happy Diwali! 🪔\n\n' +
+      'आपको और पूरे परिवार को दीपावली की ढेर सारी शुभकामनाएँ ✨\n' +
+      "Here's a little Diwali surprise for you, open it when you have a minute. — " + nm + ' 👇\n\n' + myLink;
     wa.setAttribute('href', 'https://wa.me/?text=' + encodeURIComponent(text));
     note.textContent = 'Your greeting will be signed: ' + titleCase(slug);
     setReady(true);
