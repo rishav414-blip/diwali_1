@@ -117,6 +117,13 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
 .diyas::before{content:"";position:absolute;left:5%;right:5%;bottom:34px;height:46px;background:radial-gradient(ellipse at 50% 50%,rgba(255,150,40,.28),transparent 70%);filter:blur(8px);pointer-events:none}
 .diya{width:44px;width:clamp(40px,10.5vw,64px);flex:none}
 .diya{scroll-margin-bottom:32px}
+#rk{position:fixed;left:0;top:0;width:24px;height:96px;z-index:60;pointer-events:none;display:none;will-change:transform}
+#rk svg{display:block;width:24px;height:96px;overflow:visible}
+.snd{position:fixed;right:12px;top:12px;z-index:60;width:46px;height:46px;border-radius:50%;padding:0;cursor:pointer;display:none;align-items:center;justify-content:center;border:1.5px solid var(--gold);color:var(--gold);background:rgba(18,4,29,.65)}
+body.open .snd{display:flex}
+.snd.none{display:none!important}
+.snd svg{width:24px;height:24px;display:block}
+.snd:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .diya svg{display:block;width:100%;height:auto;overflow:visible}
 .flame,.glow{opacity:0}
 .flame{transform-box:fill-box;transform-origin:50% 100%;transform:scale(0)}
@@ -200,6 +207,7 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
   <p class="sign rise" style="--rd:4.1s">With love and light,<b id="signName">Rishav Sharma</b></p>
   <div class="actions rise" style="--rd:4.5s">
     <button class="btn primary" id="light" type="button">Light a diya</button>
+    <button class="btn" id="rocket" type="button">Launch a rocket</button>
   </div>
   <p class="hint rise" style="--rd:4.7s" id="progress" aria-live="polite">Light 3 diyas to unlock a return gift</p>
 
@@ -232,6 +240,10 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
 
 <div class="diyas" id="diyas"></div>
 <p class="count" id="count" aria-live="polite"></p>
+
+<div id="rk" aria-hidden="true"><svg viewBox="0 0 24 96"><path d="M8 44 Q12 70 16 44Z" fill="#ff7a1a"/><path d="M10 44 Q12 60 14 44Z" fill="#ffe08a"/><rect x="11" y="42" width="2" height="52" fill="#8a5a2b"/><path d="M4 42 L12 28 L12 46Z" fill="#ff4f8b"/><path d="M20 42 L12 28 L12 46Z" fill="#ff4f8b"/><rect x="6" y="14" width="12" height="30" rx="2" fill="#e8481c"/><rect x="6" y="22" width="12" height="4" fill="#f7c948"/><rect x="6" y="33" width="12" height="4" fill="#f7c948"/><path d="M6 14 L12 0 L18 14Z" fill="#ffd25c"/></svg></div>
+
+<button class="snd" id="snd" type="button" aria-label="Mute sound" aria-pressed="false"></button>
 
 <div id="gate">
   <div class="half l"></div>
@@ -325,7 +337,7 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
   for (var m = 0; m < 9; m++) initial.push(addDiya(false));
   function lightInitial(){
     initial.forEach(function(d, idx){
-      setTimeout(function(){ d.classList.add('lit'); lit++; updateCount(); }, 1200 + idx * 260);
+      setTimeout(function(){ d.classList.add('lit'); lit++; updateCount(); sfxChime(.45, (idx / 8) * 1.2 - .6); }, 1200 + idx * 260);
     });
   }
   if (reduce){ initial.forEach(function(d){ d.classList.add('lit'); }); lit = 9; }
@@ -374,20 +386,125 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
   var rt;
   window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(function(){ size(); buildToran(); }, 150); });
 
+  /* sound: everything is synthesised with Web Audio, so there are no files to download */
+  var AC = null, master = null, noiseBuf = null, soundOn = true, showUntil = 0, lastBang = 0;
+  var sndBtn = $('#snd');
+  var ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.8 6a9 9 0 010 12"/></svg>';
+  var ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6"/></svg>';
+  function showSndBtn(){
+    sndBtn.innerHTML = soundOn ? ICON_ON : ICON_OFF;
+    sndBtn.setAttribute('aria-pressed', soundOn ? 'false' : 'true');
+    sndBtn.setAttribute('aria-label', soundOn ? 'Mute sound' : 'Unmute sound');
+  }
+  showSndBtn();
+  function audioInit(){
+    if (AC){ if (AC.state === 'suspended') AC.resume(); return; }
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx){ sndBtn.classList.add('none'); return; }
+      AC = new Ctx();
+      master = AC.createGain(); master.gain.value = soundOn ? .85 : 0;
+      var comp = AC.createDynamicsCompressor();
+      master.connect(comp); comp.connect(AC.destination);
+      noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      if (AC.state === 'suspended') AC.resume();
+    } catch (e){ AC = null; sndBtn.classList.add('none'); }
+  }
+  sndBtn.addEventListener('click', function(){
+    soundOn = !soundOn;
+    showSndBtn();
+    if (AC && master) master.gain.setTargetAtTime(soundOn ? .85 : 0, AC.currentTime, .03);
+  });
+  document.addEventListener('visibilitychange', function(){
+    if (!AC) return;
+    if (document.hidden) AC.suspend(); else AC.resume();
+  });
+  function canPlay(){ return AC && soundOn && !document.hidden && AC.state === 'running'; }
+  function dest(pan){
+    if (AC.createStereoPanner){
+      var sp = AC.createStereoPanner(); sp.pan.value = Math.max(-1, Math.min(1, pan || 0)); sp.connect(master); return sp;
+    }
+    return master;
+  }
+  /* a burst of filtered noise: the basic building block of a crack */
+  function noiseHit(t, dur, vol, freq, q, pan, type){
+    var src = AC.createBufferSource(); src.buffer = noiseBuf; src.playbackRate.value = rnd(.8, 1.25);
+    var f = AC.createBiquadFilter(); f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    var g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    src.connect(f); f.connect(g); g.connect(dest(pan));
+    src.start(t, rnd(0, .6)); src.stop(t + dur + .05);
+  }
+  function thump(t, vol, pan){
+    var o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(170, t); o.frequency.exponentialRampToValueAtTime(42, t + .4);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + .45);
+    o.connect(g); g.connect(dest(pan)); o.start(t); o.stop(t + .5);
+  }
+  /* level 1: a sharp cracker snap and a few crackles. level 2: a full firework bang with a long crackle. */
+  function sfxBang(pan, level){
+    if (!canPlay()) return;
+    var now = performance.now();
+    if (level < 2 && now - lastBang < 70) return;
+    lastBang = now;
+    var t = AC.currentTime + .01, big = level >= 2, v = big ? 1 : .55;
+    noiseHit(t, .1, .9 * v, rnd(2200, 3400), .7, pan);
+    noiseHit(t, big ? .4 : .2, .5 * v, 700, .5, pan, 'lowpass');
+    if (big) thump(t, .9, pan);
+    var n = big ? Math.round(rnd(9, 14)) : Math.round(rnd(3, 6));
+    for (var i = 0; i < n; i++){
+      noiseHit(t + .1 + rnd(0, big ? .9 : .5), rnd(.02, .05), rnd(.12, .4) * v, rnd(2000, 5200), 1.2, pan + rnd(-.3, .3));
+    }
+  }
+  /* a temple-bell tone: a few inharmonic partials with a long fade */
+  function tone(t, freq, vol, dec, pan){
+    var o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vol, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + dec);
+    o.connect(g); g.connect(dest(pan)); o.start(t); o.stop(t + dec + .05);
+  }
+  function sfxBell(){
+    if (!canPlay()) return;
+    var t = AC.currentTime + .02;
+    [[1, .2, 3.2], [2.76, .09, 2.2], [5.4, .05, 1.2], [8.9, .025, .7]].forEach(function(p){ tone(t, 523 * p[0], p[1], p[2], 0); });
+    [[1, .14, 3], [2.76, .06, 2]].forEach(function(p){ tone(t + .45, 659 * p[0], p[1], p[2], 0); });
+  }
+  /* a small bright chime for each diya, from a pentatonic scale so any run of them sounds pleasant */
+  var SCALE = [784, 880, 988, 1175, 1319, 1568];
+  function sfxChime(vol, pan){
+    if (!canPlay()) return;
+    var t = AC.currentTime + .01, f = SCALE[Math.floor(Math.random() * SCALE.length)];
+    tone(t, f, .13 * vol, .9, pan || 0); tone(t, f * 2.01, .05 * vol, .45, pan || 0);
+  }
+  /* the rocket: a rising whistle with a bit of hiss */
+  function sfxWhistle(sec){
+    if (!canPlay()) return;
+    var t = AC.currentTime + .01;
+    var o = AC.createOscillator(), g = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(2300, t + sec);
+    lfo.frequency.value = 22; lg.gain.value = 30; lfo.connect(lg); lg.connect(o.frequency);
+    g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.16, t + .12); g.gain.setValueAtTime(.16, t + sec - .08); g.gain.linearRampToValueAtTime(.0001, t + sec);
+    o.connect(g); g.connect(dest(0)); o.start(t); lfo.start(t); o.stop(t + sec + .05); lfo.stop(t + sec + .05);
+    noiseHit(t, sec, .1, 4500, .6, 0, 'highpass');
+  }
+
   var palette = ['#ffd24a', '#ff8a1c', '#ff4f8b', '#2fe0c8', '#fff1c9', '#c78bff'];
   var sparks = [], rockets = [];
-  function burst(x, y){
+  function burst(x, y, snd, count){
+    if (snd) sfxBang(x / W * 2 - 1, snd);
     var col = palette[Math.floor(Math.random() * palette.length)];
     var col2 = palette[Math.floor(Math.random() * palette.length)];
-    var n = reduce ? 36 : 96, ringy = Math.random() < .5;
+    var n = count || (reduce ? 36 : 96), ringy = Math.random() < .5;
     for (var i = 0; i < n; i++){
       var a = i / n * Math.PI * 2 + rnd(0, .08);
       var sp = ringy ? 3.4 + rnd(0, .4) : rnd(.8, 4.2);
       sparks.push({x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, decay: rnd(.009, .019), color: i % 3 ? col : col2, size: rnd(1.3, 2.7)});
     }
   }
-  function launch(x, ty){
-    rockets.push({x: x, y: H + 8, ty: ty, vy: -rnd(8, 10.5)});
+  function launch(x, ty, snd){
+    rockets.push({x: x, y: H + 8, ty: ty, vy: -rnd(8, 10.5), snd: snd || 0});
   }
   function fireworks(){
     c.globalCompositeOperation = 'destination-out';
@@ -400,7 +517,7 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
       c.globalAlpha = 1; c.fillStyle = '#ffe9a0';
       c.beginPath(); c.arc(r.x, r.y, 2, 0, 6.283); c.fill();
       sparks.push({x: r.x + rnd(-1, 1), y: r.y, vx: rnd(-.3, .3), vy: rnd(.4, 1), life: .6, decay: .05, color: '#ffb347', size: 1.2});
-      if (r.y <= r.ty){ burst(r.x, r.y); rockets.splice(i, 1); }
+      if (r.y <= r.ty){ burst(r.x, r.y, r.snd); rockets.splice(i, 1); }
     }
     for (var j = sparks.length - 1; j >= 0; j--){
       var s = sparks[j];
@@ -440,19 +557,52 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
   function tick(){ fireworks(); drawPetals(); requestAnimationFrame(tick); }
   requestAnimationFrame(tick);
 
+
+  /* the bottle rocket: climbs with a trail of sparks and a whistle, then explodes */
+  var rk = $('#rk'), rocketBusy = false;
+  function rocketShow(fromX, ty){
+    if (rocketBusy) return;
+    rocketBusy = true;
+    var x0 = fromX != null ? fromX : rnd(W * .25, W * .75);
+    var top = ty != null ? ty : H * rnd(.16, .3), y0 = H + 40, dur = reduce ? 700 : 1500, t0 = null;
+    rk.style.display = 'block';
+    sfxWhistle(dur / 1000);
+    function step(now){
+      if (t0 === null) t0 = now;
+      var k = Math.min(1, (now - t0) / dur), e = k * k;
+      var y = y0 + (top - y0) * e, x = x0 + Math.sin(k * 16) * 7 * k, rot = Math.cos(k * 16) * 7 * k;
+      rk.style.transform = 'translate(' + (x - 12).toFixed(1) + 'px,' + (y - 48).toFixed(1) + 'px) rotate(' + rot.toFixed(1) + 'deg)';
+      for (var i = 0; i < 3; i++){
+        sparks.push({x: x + rnd(-2, 2), y: y + 16, vx: rnd(-.7, .7), vy: rnd(.6, 2.2), life: .9, decay: rnd(.03, .06), color: i % 2 ? '#ffb347' : '#fff1c9', size: rnd(1, 2.3)});
+      }
+      if (k < 1){ requestAnimationFrame(step); return; }
+      rk.style.display = 'none'; rocketBusy = false;
+      burst(x, y, 2, 150);
+      setTimeout(function(){ burst(x - 70, y + 34, 1); }, 140);
+      setTimeout(function(){ burst(x + 70, y + 34, 1); }, 260);
+      setTimeout(function(){ burst(x, y + 70, 1); }, 380);
+    }
+    requestAnimationFrame(step);
+  }
+  $('#rocket').addEventListener('click', function(){ rocketShow(); });
+
   /* open */
   var gate = $('#gate'), seal = $('#seal'), auto;
   function openGate(){
     if (isOpen) return;
     isOpen = true;
+    audioInit();
+    setTimeout(sfxBell, 120);
+    showUntil = performance.now() + 14000;
     document.body.classList.add('open');
     gate.classList.add('go');
     var delays = [500, 950, 1400, 2100];
     delays.forEach(function(t, idx){
-      setTimeout(function(){ launch(W * (0.2 + idx * 0.2 + rnd(-.05, .05)), H * rnd(.12, .4)); }, t);
+      setTimeout(function(){ launch(W * (0.2 + idx * 0.2 + rnd(-.05, .05)), H * rnd(.12, .4), 2); }, t);
     });
     if (!reduce){
-      auto = setInterval(function(){ if (!document.hidden) launch(rnd(W * .1, W * .9), rnd(H * .1, H * .45)); }, 1700);
+      auto = setInterval(function(){ if (!document.hidden) launch(rnd(W * .1, W * .9), rnd(H * .1, H * .45), performance.now() < showUntil ? 1 : 0); }, 1700);
+      setTimeout(function(){ rocketShow(W * .5); }, 3400);
     }
     if (!reduce) lightInitial();
     autoScrollDown();
@@ -500,7 +650,7 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
   /* tap anywhere */
   document.addEventListener('pointerdown', function(e){
     if (!isOpen || e.target.closest('button,a,input,label')) return;
-    burst(e.clientX, e.clientY);
+    burst(e.clientX, e.clientY, 1);
   });
 
   /* sender name, read from a link like #from-priya-sharma */
@@ -539,14 +689,14 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
       gift.classList.add('opened');
       var r = gift.querySelector('.giftbox').getBoundingClientRect();
       var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      burst(cx, cy); burst(cx - 70, cy - 30); burst(cx + 70, cy - 30);
-      launch(rnd(W * .2, W * .8), rnd(H * .1, H * .35));
+      burst(cx, cy, 2); burst(cx - 70, cy - 30, 1); burst(cx + 70, cy - 30, 0);
+      launch(rnd(W * .2, W * .8), rnd(H * .1, H * .35), 1);
     }, 1000);
   }
   $('#light').addEventListener('click', function(){
     if (lit < 27){
       var d = addDiya(true);
-      d.classList.add('lit'); lit++; updateCount();
+      d.classList.add('lit'); lit++; updateCount(); sfxChime(1);
       /* before the gift unlocks, keep the new diya on screen (wait for its pop-in so it has a size) */
       if (!unlocked && mine + 1 < NEED){
         setTimeout(function(){
@@ -554,8 +704,8 @@ a.btn[aria-disabled="true"],button.btn:disabled{opacity:.45;pointer-events:none;
         }, 700);
       }
     }
-    launch(rnd(W * .15, W * .85), rnd(H * .1, H * .4));
-    launch(rnd(W * .15, W * .85), rnd(H * .1, H * .4));
+    launch(rnd(W * .15, W * .85), rnd(H * .1, H * .4), 1);
+    launch(rnd(W * .15, W * .85), rnd(H * .1, H * .4), 0);
     mine++;
     if (!unlocked){ if (mine >= NEED) unlock(); else updateProgress(); }
   });
